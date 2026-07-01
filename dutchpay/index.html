@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<title>공주들의 N빵 계산기</title>
+<!-- 모바일 웹앱 설정 -->
+<meta name="theme-color" content="#7C3AED">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dutchpay">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<!-- 파비콘 / 앱 아이콘 -->
+<link rel="icon" href="pay.png">
+<link rel="apple-touch-icon" href="pay.png">
+<style>
+  :root{
+    --pink:#ffd9e6;
+    --pink-deep:#ffb3ce;
+    --blue:#cfe8ff;
+    --mint:#cdf5e3;
+    --cream:#fff6e6;
+    --butter:#ffe9b3;
+    --lavender:#e6ddff;
+    --ink:#5b4a4a;
+    --ink-soft:#8a7a7a;
+    --gold:#ffcf7a;
+    --paper:#fffdf8;
+    --shadow: 0 8px 24px rgba(150,120,140,0.18);
+    --shadow-soft: 0 4px 14px rgba(150,120,140,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    font-family:"Gulim","굴림","GulimChe","Dotum",sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 10%, var(--blue) 0%, transparent 45%),
+      radial-gradient(circle at 85% 15%, var(--pink) 0%, transparent 45%),
+      radial-gradient(circle at 50% 90%, var(--mint) 0%, transparent 50%),
+      linear-gradient(160deg, var(--cream), var(--lavender));
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:460px;
+    margin:0 auto;
+    padding:28px 18px 60px;
+    position:relative;
+  }
+
+  /* ===== Header ===== */
+  .header{
+    text-align:center;
+    margin-bottom:22px;
+    position:relative;
+  }
+  .washi{
+    position:absolute;
+    top:-14px;left:50%;
+    transform:translateX(-50%) rotate(-3deg);
+    width:150px;height:22px;
+    background:repeating-linear-gradient(45deg, var(--pink-deep), var(--pink-deep) 8px, #ffc9dc 8px, #ffc9dc 16px);
+    opacity:0.55;border-radius:4px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.06);
+    z-index:1;
+  }
+  .header h1{
+    position:relative;
+    z-index:2;
+    margin:14px 0 4px;
+    font-size:23px;
+    font-weight:800;
+    letter-spacing:-0.3px;
+    text-shadow:0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(255,255,255,0.6);
+  }
+  .header p{
+    position:relative;
+    z-index:2;
+    margin:0;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+
+  /* ===== Paper card (sticky-note style board) ===== */
+  .card{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper), var(--paper)),
+      repeating-linear-gradient(transparent 0 27px, rgba(180,160,150,0.06) 27px 28px);
+    border-radius:20px;
+    padding:18px 18px 16px;
+    margin-bottom:16px;
+    box-shadow:var(--shadow-soft);
+    position:relative;
+    border:1px solid rgba(255,255,255,0.6);
+  }
+  .card::before{
+    content:'';
+    position:absolute;
+    top:-8px;left:22px;
+    width:34px;height:16px;
+    background:rgba(255,214,150,0.55);
+    border:1px solid rgba(255,190,110,0.5);
+    border-radius:2px;
+    transform:rotate(-4deg);
+  }
+  .card-label{
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:10px;
+    display:flex;align-items:center;gap:6px;
+  }
+
+  /* ===== Amount input ===== */
+  .amount-input{
+    width:100%;
+    border:none;
+    background:rgba(255,255,255,0.65);
+    border-radius:14px;
+    padding:14px 14px;
+    font-size:22px;
+    font-weight:800;
+    text-align:right;
+    color:var(--ink);
+    outline:none;
+    box-shadow:inset 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .amount-input::placeholder{ color:#c9b8b8; font-weight:600; font-size:16px; }
+  .amount-suffix{ text-align:right; font-size:12px; color:var(--ink-soft); margin-top:6px; }
+
+  /* ===== Glass button base ===== */
+  .glass-btn{
+    border:none;
+    cursor:pointer;
+    border-radius:16px;
+    backdrop-filter:blur(6px);
+    background:rgba(255,255,255,0.55);
+    border:1px solid rgba(255,255,255,0.7);
+    box-shadow:0 4px 12px rgba(150,120,140,0.15), inset 0 1px 0 rgba(255,255,255,0.8);
+    transition:transform .15s ease, box-shadow .15s ease;
+    color:var(--ink);
+    font-weight:700;
+  }
+  .glass-btn:active{ transform:scale(0.96); }
+
+  /* ===== People counter ===== */
+  .counter-row{
+    display:flex;align-items:center;justify-content:center;gap:18px;
+  }
+  .counter-btn{
+    width:48px;height:48px;
+    font-size:22px;
+    background:linear-gradient(160deg, var(--blue), #b9dcff);
+  }
+  .counter-value{
+    min-width:70px;
+    text-align:center;
+    font-size:26px;
+    font-weight:800;
+  }
+  .counter-value span{ font-size:14px; font-weight:600; color:var(--ink-soft); margin-left:2px;}
+
+  /* ===== Names ===== */
+  .name-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .name-input{
+    border:none;
+    border-radius:12px;
+    padding:10px 12px;
+    font-size:14px;
+    background:rgba(255,255,255,0.65);
+    outline:none;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  /* ===== Options ===== */
+  .opt-group{ display:flex; flex-direction:column; gap:8px; }
+  .opt-title{ font-size:12px; color:var(--ink-soft); margin:10px 0 4px; font-weight:700;}
+  .radio-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .radio-pill{
+    flex:1;
+    text-align:center;
+    padding:9px 6px;
+    border-radius:12px;
+    font-size:12.5px;
+    font-weight:700;
+    background:rgba(255,255,255,0.5);
+    border:1.5px solid transparent;
+    cursor:pointer;
+    color:var(--ink-soft);
+    transition:all .15s ease;
+  }
+  .radio-pill.active{
+    background:linear-gradient(160deg, var(--mint), #aeeccb);
+    color:var(--ink);
+    border-color:rgba(255,255,255,0.8);
+    box-shadow:0 3px 10px rgba(120,200,160,0.35);
+  }
+  .radio-pill input{ display:none; }
+
+  /* ===== Payer select ===== */
+  select.payer-select{
+    width:100%;
+    padding:12px;
+    border-radius:12px;
+    border:none;
+    background:rgba(255,255,255,0.65);
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+    outline:none;
+  }
+
+  /* ===== Action buttons ===== */
+  .action-row{
+    display:flex;gap:10px;margin-top:6px;
+  }
+  .btn-reset{
+    flex:1;
+    padding:15px;
+    background:rgba(255,255,255,0.5);
+    color:var(--ink-soft);
+  }
+  .btn-calc{
+    flex:2;
+    padding:15px;
+    font-size:16px;
+    background:linear-gradient(160deg, var(--pink), var(--pink-deep));
+    box-shadow:0 6px 20px rgba(255,140,180,0.55), inset 0 1px 0 rgba(255,255,255,0.9);
+    color:#7a2e4a;
+  }
+  .error-msg{
+    color:#d1668a;
+    font-size:12.5px;
+    text-align:center;
+    margin-top:8px;
+    min-height:16px;
+    font-weight:600;
+  }
+
+  /* ===== Modal ===== */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(80,60,70,0.35);
+    backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;justify-content:center;
+    padding:20px;
+    z-index:50;
+    animation:fadeIn .25s ease;
+  }
+  .overlay.show{ display:flex; }
+  @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+  .modal{
+    width:100%;
+    max-width:380px;
+    background:linear-gradient(160deg, #fffdf8, #fff3e0);
+    border-radius:26px;
+    padding:26px 22px 22px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.25);
+    border:1px solid rgba(255,255,255,0.8);
+    position:relative;
+    animation:popIn .3s cubic-bezier(.34,1.56,.64,1);
+    max-height:86vh;
+    overflow-y:auto;
+  }
+  @keyframes popIn{ from{opacity:0; transform:translateY(16px) scale(0.94);} to{opacity:1; transform:translateY(0) scale(1);} }
+  .modal-close{
+    position:absolute; top:14px; right:16px;
+    background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;
+  }
+  .modal h2{ text-align:center; font-size:15px; margin:0 0 14px; color:var(--ink-soft); font-weight:700;}
+  .result-main{
+    text-align:center;
+    background:rgba(255,255,255,0.6);
+    border-radius:18px;
+    padding:18px 10px;
+    margin-bottom:14px;
+  }
+  .result-main .big{ font-size:30px; font-weight:900; color:#c9761f; }
+  .result-main .small{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+  .result-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;
+  }
+  .result-chip{
+    background:rgba(255,255,255,0.55);
+    border-radius:12px;
+    padding:10px;
+    text-align:center;
+  }
+  .result-chip .label{ font-size:11px; color:var(--ink-soft); }
+  .result-chip .value{ font-size:15px; font-weight:800; margin-top:2px; }
+  .settle-list{
+    background:rgba(255,255,255,0.5);
+    border-radius:14px;
+    padding:10px 12px;
+    margin-bottom:12px;
+  }
+  .settle-list div{
+    font-size:13.5px;
+    padding:6px 0;
+    border-bottom:1px dashed rgba(150,120,140,0.2);
+  }
+  .settle-list div:last-child{ border-bottom:none; }
+  .random-note{
+    text-align:center;
+    font-size:13px;
+    background:linear-gradient(160deg, var(--pink), var(--pink-deep));
+    border-radius:12px;
+    padding:9px;
+    margin-bottom:12px;
+    font-weight:700;
+  }
+  .modal-actions{ display:flex; gap:8px; }
+  .btn-share{
+    flex:1;
+    padding:13px;
+    background:linear-gradient(160deg, var(--lavender), #cbbcff);
+  }
+  .btn-close2{
+    flex:1;
+    padding:13px;
+    background:rgba(255,255,255,0.5);
+    color:var(--ink-soft);
+  }
+  .decor{ position:absolute; font-size:16px; opacity:0.75; pointer-events:none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="washi"></div>
+    <h1>🧮 공주들의 N빵 계산기</h1>
+    <p>더치페이, 이제 감으로 하지 말고 정확하게 💕</p>
+  </div>
+
+  <!-- 총 금액 -->
+  <div class="card">
+    <div class="card-label">💰 총 금액</div>
+    <input type="text" inputmode="numeric" id="totalAmount" class="amount-input" placeholder="총 금액을 입력하세요">
+    <div class="amount-suffix" id="amountWon">0원</div>
+  </div>
+
+  <!-- 인원수 -->
+  <div class="card">
+    <div class="card-label">👯 인원수</div>
+    <div class="counter-row">
+      <button class="glass-btn counter-btn" onclick="changePeople(-1)">−</button>
+      <div class="counter-value"><span id="peopleCount">2</span><span>명</span></div>
+      <button class="glass-btn counter-btn" onclick="changePeople(1)">＋</button>
+    </div>
+  </div>
+
+  <!-- 이름 입력 -->
+  <div class="card">
+    <div class="card-label">✏️ 참여자 이름 (정산에 사용돼요)</div>
+    <div class="name-grid" id="nameGrid"></div>
+  </div>
+
+  <!-- 옵션 -->
+  <div class="card">
+    <div class="card-label">⚙️ 계산 옵션</div>
+    <div class="opt-title">금액 단위</div>
+    <div class="radio-row" id="roundGroup">
+      <label class="radio-pill active" data-val="exact"><input type="radio" name="round" value="exact" checked>정확히 나누기</label>
+      <label class="radio-pill" data-val="10"><input type="radio" name="round" value="10">10원 단위</label>
+      <label class="radio-pill" data-val="100"><input type="radio" name="round" value="100">100원 단위</label>
+    </div>
+    <div class="opt-title">잔돈 처리</div>
+    <div class="radio-row" id="remainderGroup">
+      <label class="radio-pill active" data-val="last"><input type="radio" name="remainder" value="last" checked>마지막 사람 부담</label>
+      <label class="radio-pill" data-val="random"><input type="radio" name="remainder" value="random">🎲 랜덤 부담</label>
+    </div>
+  </div>
+
+  <!-- 결제자 -->
+  <div class="card">
+    <div class="card-label">💳 먼저 결제한 사람</div>
+    <select id="payerSelect" class="payer-select"></select>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="action-row">
+    <button class="glass-btn btn-reset" onclick="resetAll()">초기화</button>
+    <button class="glass-btn btn-calc" onclick="calculate()">계산하기 🧾</button>
+  </div>
+</div>
+
+<!-- 결과 모달 -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2>정산 결과 🌸</h2>
+    <div class="result-main">
+      <div class="big" id="perPersonBig">0원</div>
+      <div class="small">1인당 부담 금액</div>
+    </div>
+    <div class="result-grid">
+      <div class="result-chip"><div class="label">총 금액</div><div class="value" id="rTotal">0원</div></div>
+      <div class="result-chip"><div class="label">인원수</div><div class="value" id="rPeople">0명</div></div>
+      <div class="result-chip"><div class="label">기본 1인당</div><div class="value" id="rBase">0원</div></div>
+      <div class="result-chip"><div class="label">남는 금액</div><div class="value" id="rRemain">0원</div></div>
+    </div>
+    <div class="random-note" id="randomNote" style="display:none;"></div>
+    <div class="settle-list" id="settleList"></div>
+    <div class="modal-actions">
+      <button class="glass-btn btn-share" onclick="shareResult()">공유하기 📋</button>
+      <button class="glass-btn btn-close2" onclick="closeModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let peopleCount = 2;
+let lastResult = null;
+
+// ---------- 금액 입력 (콤마 자동) ----------
+const totalInput = document.getElementById('totalAmount');
+totalInput.addEventListener('input', () => {
+  const raw = totalInput.value.replace(/[^0-9]/g, '');
+  totalInput.value = raw ? Number(raw).toLocaleString('ko-KR') : '';
+  document.getElementById('amountWon').textContent = (raw ? Number(raw).toLocaleString('ko-KR') : '0') + '원';
+});
+
+function getRawTotal(){
+  return Number(totalInput.value.replace(/[^0-9]/g, '')) || 0;
+}
+
+// ---------- 인원수 ----------
+function changePeople(delta){
+  const next = peopleCount + delta;
+  if(next < 2){ showError('인원수는 최소 2명 이상이어야 해요.'); return; }
+  if(next > 20){ showError('인원수는 최대 20명까지 가능해요.'); return; }
+  peopleCount = next;
+  document.getElementById('peopleCount').textContent = peopleCount;
+  renderNameGrid();
+  renderPayerSelect();
+  clearError();
+}
+
+function renderNameGrid(){
+  const grid = document.getElementById('nameGrid');
+  const existing = Array.from(grid.querySelectorAll('.name-input')).map(i => i.value);
+  grid.innerHTML = '';
+  for(let i = 0; i < peopleCount; i++){
+    const input = document.createElement('input');
+    input.className = 'name-input';
+    input.maxLength = 6;
+    input.value = existing[i] || ('사람' + (i+1));
+    input.addEventListener('input', renderPayerSelect);
+    grid.appendChild(input);
+  }
+}
+
+function getNames(){
+  return Array.from(document.querySelectorAll('.name-input')).map(i => i.value.trim() || '이름없음');
+}
+
+function renderPayerSelect(){
+  const select = document.getElementById('payerSelect');
+  const prev = select.value;
+  const names = getNames();
+  select.innerHTML = names.map((n, idx) => `<option value="${idx}">${n}</option>`).join('');
+  if(prev && Number(prev) < names.length) select.value = prev;
+}
+
+// ---------- 옵션 라디오 pill ----------
+function setupPillGroup(groupId){
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.radio-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      group.querySelectorAll('.radio-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      pill.querySelector('input').checked = true;
+    });
+  });
+}
+setupPillGroup('roundGroup');
+setupPillGroup('remainderGroup');
+
+function getRoundOption(){
+  return document.querySelector('input[name="round"]:checked').value;
+}
+function getRemainderMode(){
+  return document.querySelector('input[name="remainder"]:checked').value;
+}
+
+// ---------- 에러 메시지 ----------
+function showError(msg){
+  document.getElementById('errorMsg').textContent = msg;
+}
+function clearError(){
+  document.getElementById('errorMsg').textContent = '';
+}
+
+// ---------- 계산 ----------
+function calculate(){
+  clearError();
+  const total = getRawTotal();
+  const people = peopleCount;
+
+  if(total <= 0){ showError('총 금액은 0원보다 커야 해요.'); return; }
+  if(people < 2){ showError('인원수는 최소 2명 이상이어야 해요.'); return; }
+
+  const roundOpt = getRoundOption();
+  const remainderMode = getRemainderMode();
+  const names = getNames();
+
+  let unit = 1;
+  if(roundOpt === '10') unit = 10;
+  if(roundOpt === '100') unit = 100;
+
+  const base = Math.floor(Math.floor(total / people) / unit) * unit;
+  const remainder = total - (base * people);
+
+  // 잔돈을 부담할 사람 index 결정
+  let extraIdx = people - 1; // 기본: 마지막 사람
+  if(remainder > 0 && remainderMode === 'random'){
+    extraIdx = Math.floor(Math.random() * people);
+  }
+
+  const shares = new Array(people).fill(base);
+  if(remainder > 0) shares[extraIdx] += remainder;
+
+  const payerIdx = Number(document.getElementById('payerSelect').value);
+
+  lastResult = { total, people, base, remainder, shares, names, payerIdx, extraIdx, remainderMode };
+  renderResult();
+  document.getElementById('overlay').classList.add('show');
+}
+
+function renderResult(){
+  const r = lastResult;
+  document.getElementById('perPersonBig').textContent = Math.round(r.total / r.people).toLocaleString('ko-KR') + '원 (평균)';
+  document.getElementById('rTotal').textContent = r.total.toLocaleString('ko-KR') + '원';
+  document.getElementById('rPeople').textContent = r.people + '명';
+  document.getElementById('rBase').textContent = r.base.toLocaleString('ko-KR') + '원';
+  document.getElementById('rRemain').textContent = r.remainder.toLocaleString('ko-KR') + '원';
+
+  const noteEl = document.getElementById('randomNote');
+  if(r.remainder > 0){
+    noteEl.style.display = 'block';
+    noteEl.textContent = '🎲 오늘은 ' + r.names[r.extraIdx] + '가(이) ' + r.remainder.toLocaleString('ko-KR') + '원을 더 냅니다!';
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const settleEl = document.getElementById('settleList');
+  settleEl.innerHTML = '';
+  const payerName = r.names[r.payerIdx];
+  r.names.forEach((name, idx) => {
+    if(idx === r.payerIdx) return;
+    const owe = r.shares[idx];
+    const div = document.createElement('div');
+    div.textContent = `${name} → ${payerName}  ${owe.toLocaleString('ko-KR')}원`;
+    settleEl.appendChild(div);
+  });
+  if(r.names.length <= 1){
+    settleEl.innerHTML = '<div>정산할 인원이 없어요.</div>';
+  }
+}
+
+function closeModal(){
+  document.getElementById('overlay').classList.remove('show');
+}
+
+function shareResult(){
+  if(!lastResult) return;
+  const r = lastResult;
+  const payerName = r.names[r.payerIdx];
+  let text = `🧮 공주들의 N빵 계산기\n`;
+  text += `총 금액 : ${r.total.toLocaleString('ko-KR')}원\n`;
+  text += `인원 : ${r.people}명\n`;
+  text += `1인당 : ${r.base.toLocaleString('ko-KR')}원\n`;
+  if(r.remainder > 0){
+    text += `잔돈 : ${r.remainder.toLocaleString('ko-KR')}원 (${r.names[r.extraIdx]} 추가 부담)\n`;
+  }
+  text += `\n[정산]\n`;
+  r.names.forEach((name, idx) => {
+    if(idx === r.payerIdx) return;
+    text += `${name} → ${payerName} ${r.shares[idx].toLocaleString('ko-KR')}원\n`;
+  });
+
+  navigator.clipboard.writeText(text).then(() => {
+    showError('');
+    const btn = document.querySelector('.btn-share');
+    const orig = btn.textContent;
+    btn.textContent = '복사됨! ✅';
+    setTimeout(() => btn.textContent = orig, 1500);
+  }).catch(() => {
+    alert(text);
+  });
+}
+
+// ---------- 초기화 ----------
+function resetAll(){
+  totalInput.value = '';
+  document.getElementById('amountWon').textContent = '0원';
+  peopleCount = 2;
+  document.getElementById('peopleCount').textContent = 2;
+  renderNameGrid();
+  renderPayerSelect();
+  document.querySelectorAll('#roundGroup .radio-pill').forEach((p,i) => p.classList.toggle('active', i===0));
+  document.querySelector('input[name="round"][value="exact"]').checked = true;
+  document.querySelectorAll('#remainderGroup .radio-pill').forEach((p,i) => p.classList.toggle('active', i===0));
+  document.querySelector('input[name="remainder"][value="last"]').checked = true;
+  clearError();
+}
+
+// 초기 렌더
+renderNameGrid();
+renderPayerSelect();
+</script>
+</body>
+</html>
